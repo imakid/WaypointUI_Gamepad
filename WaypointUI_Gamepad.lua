@@ -17,9 +17,8 @@ local STICK_DEADZONE = 0.5
 -- 默认 1.5x（325px * 1.5 ≈ 487px，比原生 StaticPopup 还大）
 local PROMPT_SCALE = 1.5
 
--- Settings UI 缩放：放大设置面板使其在掌机上更易操作
--- 默认 1.3x（在 720p Steam Deck 上各元素仍然可见且不超出屏幕）
-local SETTINGS_SCALE = 1.3
+
+
 
 -- ==================== 工具函数 ====================
 -- ConsolePort 存在性检测
@@ -271,40 +270,12 @@ local function OnPromptHide(prompt)
         -- CP 清理
         RemoveCPHints(activePrompt)
 
-        -- 恢复缩放
-        activePrompt:SetScale(1)
-        
         activePrompt = nil
     end
 end
 
--- ==================== Settings UI 缩放 ====================
--- Hook WUISettingFrame 的 Show/Hide，打开设置面板时放大，关闭时恢复
--- SetScale 在战斗中可安全调用，不影响布局
 
-local function OnSettingsShow(self)
-    self:SetScale(SETTINGS_SCALE)
-end
 
-local function OnSettingsHide(self)
-    self:SetScale(1)
-end
-
-local function HookSettingsFrame()
-    local settingFrame = _G["WUISettingFrame"]
-    if not settingFrame then return false end
-
-    -- HookScript 不会覆盖原始脚本，而是在原始之后追加
-    settingFrame:HookScript("OnShow", OnSettingsShow)
-    settingFrame:HookScript("OnHide", OnSettingsHide)
-
-    -- 如果当前已显示，立即应用缩放
-    if settingFrame:IsShown() then
-        OnSettingsShow(settingFrame)
-    end
-
-    return true
-end
 
 -- ==================== 初始化 ====================
 -- Dependencies: WaypointUI 保证了本插件在 WaypointUI 之后加载
@@ -352,10 +323,8 @@ initFrame:SetScript("OnEvent", function(self, event, addon)
             end)
         end
 
-        -- Hook Settings UI
-        -- WUISettingFrame 在 WaypointUI 的 Settings_UI.lua 加载时立即创建并写入 _G，
-        -- Dependencies: WaypointUI 保证了在 ADDON_LOADED 时 WUISettingFrame 已可用
-        HookSettingsFrame()
+
+
     end
 end)
 
@@ -378,14 +347,5 @@ _G.WaypointUI_Gamepad = {
             activePrompt:SetScale(PROMPT_SCALE)
         end
     end,
-    GetSettingsScale = function() return SETTINGS_SCALE end,
-    SetSettingsScale = function(scale)
-        if not ValidateScale(scale) then return end
-        SETTINGS_SCALE = scale
-        -- 如果设置面板当前已显示，立即应用新缩放
-        local settingFrame = _G["WUISettingFrame"]
-        if settingFrame and settingFrame:IsShown() then
-            settingFrame:SetScale(SETTINGS_SCALE)
-        end
-    end,
+
 }
