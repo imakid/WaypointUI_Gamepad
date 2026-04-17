@@ -14,8 +14,12 @@ local STICK_THROTTLE = 0.15
 local STICK_DEADZONE = 0.5
 
 -- Prompt 缩放：放大确认框使其在掌机上更易操作
--- 默认 1.3x（325px * 1.3 ≈ 422px，接近原生 StaticPopup 的 420px）
+-- 默认 1.5x（325px * 1.5 ≈ 487px，比原生 StaticPopup 还大）
 local PROMPT_SCALE = 1.5
+
+-- Settings UI 缩放：放大设置面板使其在掌机上更易操作
+-- 默认 1.3x（在 720p Steam Deck 上各元素仍然可见且不超出屏幕）
+local SETTINGS_SCALE = 1.3
 
 -- ==================== 工具函数 ====================
 -- ConsolePort 存在性检测
@@ -274,6 +278,34 @@ local function OnPromptHide(prompt)
     end
 end
 
+-- ==================== Settings UI 缩放 ====================
+-- Hook WUISettingFrame 的 Show/Hide，打开设置面板时放大，关闭时恢复
+-- SetScale 在战斗中可安全调用，不影响布局
+
+local function OnSettingsShow(self)
+    self:SetScale(SETTINGS_SCALE)
+end
+
+local function OnSettingsHide(self)
+    self:SetScale(1)
+end
+
+local function HookSettingsFrame()
+    local settingFrame = _G["WUISettingFrame"]
+    if not settingFrame then return false end
+
+    -- HookScript 不会覆盖原始脚本，而是在原始之后追加
+    settingFrame:HookScript("OnShow", OnSettingsShow)
+    settingFrame:HookScript("OnHide", OnSettingsHide)
+
+    -- 如果当前已显示，立即应用缩放
+    if settingFrame:IsShown() then
+        OnSettingsShow(settingFrame)
+    end
+
+    return true
+end
+
 -- ==================== 初始化 ====================
 -- Dependencies: WaypointUI 保证了本插件在 WaypointUI 之后加载
 -- WUISharedPrompt 在 WaypointUI 的 ADDON_LOADED 阶段就创建完毕
@@ -303,6 +335,8 @@ initFrame:RegisterEvent("ADDON_LOADED")
 initFrame:SetScript("OnEvent", function(self, event, addon)
     if event == "ADDON_LOADED" and addon == ADDON_NAME then
         self:UnregisterEvent("ADDON_LOADED")
+
+        -- Hook Prompt
         if WUISharedPrompt then
             hooksecurefunc(WUISharedPrompt, "Open", function(...) OnPromptOpen(WUISharedPrompt, ...) end)
             hooksecurefunc(WUISharedPrompt, "HidePrompt", function() OnPromptHide(WUISharedPrompt) end)
@@ -317,15 +351,41 @@ initFrame:SetScript("OnEvent", function(self, event, addon)
                 end
             end)
         end
+
+        -- Hook Settings UI
+        -- WUISettingFrame 在 WaypointUI 的 Settings_UI.lua 加载时立即创建并写入 _G，
+        -- Dependencies: WaypointUI 保证了在 ADDON_LOADED 时 WUISettingFrame 已可用
+        HookSettingsFrame()
     end
 end)
 
 -- ==================== 导出供调试 ====================
+local function ValidateScale(scale)
+    return type(scale) == "number" and scale > 0 and scale <= 5
+end
+
 _G.WaypointUI_Gamepad = {
     GetActivePrompt = function() return activePrompt end,
     GetFocusButtons = function() return focusButtons end,
     GetFocusIndex = function() return focusIndex end,
     IsSwitchController = function() return isSwitchController end,
     GetPromptScale = function() return PROMPT_SCALE end,
-    SetPromptScale = function(scale) PROMPT_SCALE = scale end,
+    SetPromptScale = function(scale)
+        if not ValidateScale(scale) then return end
+        PROMPT_SCALE = scale
+        -- 如果 Prompt 当前已显示，立即应用新缩放
+        if activePrompt and activePrompt:IsShown() then
+            activePrompt:SetScale(PROMPT_SCALE)
+        end
+    end,
+    GetSettingsScale = function() return SETTINGS_SCALE end,
+    SetSettingsScale = function(scale)
+        if not ValidateScale(scale) then return end
+        SETTINGS_SCALE = scale
+        -- 如果设置面板当前已显示，立即应用新缩放
+        local settingFrame = _G["WUISettingFrame"]
+        if settingFrame and settingFrame:IsShown() then
+            settingFrame:SetScale(SETTINGS_SCALE)
+        end
+    end,
 }
