@@ -1,5 +1,5 @@
 ## Interface: 120001, 120005
-## Version: 1.0.3
+## Version: 1.2.0
 ## Title: WaypointUI Gamepad
 ## Notes: Adds gamepad support and UI scaling to WaypointUI prompt for handheld play
 ## Notes-zhCN: 为 WaypointUI 弹窗添加手柄操作及缩放支持（掌机优化）
