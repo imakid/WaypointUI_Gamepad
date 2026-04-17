@@ -1,0 +1,11 @@
+## Interface: 120001, 120005
+## Version: 1.0.0
+## Title: WaypointUI Gamepad
+## Notes: Adds gamepad support to WaypointUI prompt dialogs
+## Notes-zhCN: 为 WaypointUI 弹窗添加手柄操作支持
+## Author: Gamepadifier
+## IconTexture: Interface\AddOns\WaypointUI\Art\Icons\Logo-White
+## Dependencies: WaypointUI
+## OptionalDeps: ConsolePort
+
+WaypointUI_Gamepad.lua
